@@ -98,7 +98,7 @@ $out = object_merge_opts($o1, OBJECT_MERGE_OPT_CONFLICT_EXCEPTION, $o2, $o3);
 // UnexpectedValueException thrown
 ```
 
-#### `OBJECT_MERGE_OPT_UNIQUE_ARRAYS_`
+#### `OBJECT_MERGE_OPT_UNIQUE_ARRAYS`
 
 *NOTE*: This only has an effect when doing a *recursive* merge!
 
