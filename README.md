@@ -30,25 +30,9 @@ class stdClass#55 (3) {
 If you require recursive merging of child objects, that is also possible:
 
 ```php
-$o1 = json_decode(<<<JSON
-{
-    "key": ["one"]
-}
-JSON
-);
-$o2 = json_decode(<<<JSON
-{
-    "key": ["two"]
-}
-JSON
-);
-
-$o3 = json_decode(<<<JSON
-{
-    "key": ["three"]
-}
-JSON
-);
+$o1 = json_decode('{"key": ["one"]}');
+$o2 = json_decode('{"key": ["two"]}');
+$o3 = json_decode('{"key": ["three"]}');
 
 $out = object_merge_recursive($o1, $o2, $o3);
 

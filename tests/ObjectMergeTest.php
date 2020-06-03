@@ -138,7 +138,6 @@ class ObjectMergeTest extends TestCase
                 $actual = ObjectMerge::merge($root, ...$others);
             }
             $this->assertEquals($expected, $actual);
-            var_dump($actual);
         }
     }
 }
