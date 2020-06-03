@@ -99,6 +99,22 @@ class ObjectMergeTest extends TestCase
             'recurse'  => true,
             'opts'     => OBJECT_MERGE_OPT_UNIQUE_ARRAYS,
         ],
+        [
+            'root'     => '{"key":{}}',
+            'others'   => ['{"key":{}}'],
+            'expected' => '{"key":{}}',
+        ],
+        [
+            'root'     => '{"key":{"nope":"should not be here"}}',
+            'others'   => ['{"key":{}}'],
+            'expected' => '{"key":{}}',
+        ],
+        [
+            'root'     => '{"key":{"yep":"i should be here"}}',
+            'others'   => ['{"key":{}}'],
+            'expected' => '{"key":{"yep":"i should be here"}}',
+            'recurse'  => true,
+        ]
     );
 
     /**
