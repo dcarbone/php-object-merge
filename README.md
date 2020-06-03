@@ -2,6 +2,8 @@
 
 This is a simple library that facilitates the merging of two or more PHP `stdClass` object properties
 
+[![Build Status](https://travis-ci.com/dcarbone/php-object-merge.svg?branch=master)](https://travis-ci.com/dcarbone/php-object-merge)
+
 ## Non-Recursive
 The fastest approach to merging two objects will simply apply the fields present in the list of `...$others`
 to the root object.
