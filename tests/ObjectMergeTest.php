@@ -114,6 +114,12 @@ class ObjectMergeTest extends TestCase
             'others'   => ['{"key":{}}'],
             'expected' => '{"key":{"yep":"i should be here"}}',
             'recurse'  => true,
+        ],
+        [
+            'root'     => '{"key":{"sub":{"sub2":{"sub3":"value"}}}}',
+            'others'   => ['{"key":{"sub":{"sub22":{"sub223":"value2"}}}}'],
+            'expected' => '{"key":{"sub":{"sub2":{"sub3":"value"},"sub22":{"sub223":"value2"}}}}',
+            'recurse'  => true
         ]
     );
 
