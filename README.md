@@ -133,3 +133,78 @@ class stdClass#57 (1) {
 }
 */
 ```
+
+#### `OBJECT_MERGE_OPT_COMPARE_ARRAYS`
+
+*NOTE*: This only has an effect during a *recursive* merge!
+
+When this is provided, individual array offsets will have their values compared and merged, rather than merely appended
+together.
+
+Example 1:
+```php
+$o1 = json_decode('{"arr":[{"key1":"value1"}]}');
+$o2 = json_decode('{"arr":[{"key2":"value2"}]}');
+$o3 = json_decode('{"arr":[{"key3":"value3"}]}');
+
+$out = object_merge_recursive_opts(OBJECT_MERGE_OPT_MERGE_ARRAY_VALUES, $o1, $o2, $o3);
+
+var_dump($out);
+
+/*
+class stdClass#120 (1) {
+  public $arr =>
+  array(1) {
+    [0] =>
+    class stdClass#116 (3) {
+      public $key1 =>
+      string(6) "value1"
+      public $key2 =>
+      string(6) "value2"
+      public $key3 =>
+      string(6) "value3"
+    }
+  }
+}
+*/
+```
+
+Example 2:
+```php
+$o1 = json_decode('{"arr":[{"key1":"value1","arr":[{"key11":"value11"}]}]}');
+$o2 = json_decode('{"arr":[{"key2":"value2","arr":[{"key22":"value22"}]}]}');
+$o3 = json_decode('{"arr":[{"key3":"value3","arr":[{"key33":"value33"}]}]}');
+
+$out = object_merge_recursive_opts(OBJECT_MERGE_OPT_MERGE_ARRAY_VALUES, $o1, $o2, $o3); 
+
+var_dump($out);
+
+/*
+class stdClass#56 (1) {
+  public $arr =>
+  array(1) {
+    [0] =>
+    class stdClass#107 (4) {
+      public $key1 =>
+      string(6) "value1"
+      public $arr =>
+      array(1) {
+        [0] =>
+        class stdClass#119 (3) {
+          public $key11 =>
+          string(7) "value11"
+          public $key22 =>
+          string(7) "value22"
+          public $key33 =>
+          string(7) "value33"
+        }
+      }
+      public $key2 =>
+      string(6) "value2"
+      public $key3 =>
+      string(6) "value3"
+    }
+  }
+}
+*/
+```

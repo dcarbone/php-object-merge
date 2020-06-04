@@ -106,7 +106,7 @@ class ObjectMerge
      */
     private static function optSet($opts, $opt)
     {
-        return $opt === ($opts & (1 << ($opt - 1)));
+        return 0 !== ($opts & $opt);
     }
 
     /**
@@ -160,19 +160,39 @@ class ObjectMerge
      */
     private static function mergeArrayValues($recurse, $opts, array $leftValue, array $rightValue)
     {
-        $out = array_merge($leftValue, $rightValue);
+        if (self::optSet($opts, OBJECT_MERGE_OPT_MERGE_ARRAY_VALUES)) {
+            $out = [];
 
-        foreach ($out as $i => &$v) {
-            $vt = gettype($v);
-            if (self::OBJECT_T === $vt) {
-                $v = self::mergeObjectValues($recurse, $opts, new stdClass(), $v);
-            } elseif (self::ARRAY_T === $vt) {
-                $v = self::mergeArrayValues($recurse, $opts, [], $v);
+            $lc = count($leftValue);
+            $rc = count($rightValue);
+            $limit = $lc > $rc ? $lc : $rc;
+
+            for ($i = 0; $i < $limit; $i++) {
+                $leftDefined = array_key_exists($i, $leftValue);
+                $rightDefined = array_key_exists($i, $rightValue);
+                $out[$i] = self::mergeValues(
+                    $recurse,
+                    $opts,
+                    $i,
+                    $leftDefined ? $leftValue[$i] : OBJECT_MERGE_UNDEFINED,
+                    $rightDefined ? $rightValue[$i] : OBJECT_MERGE_UNDEFINED
+                );
+            }
+        } else {
+            $out = array_merge($leftValue, $rightValue);
+
+            foreach ($out as $i => &$v) {
+                $vt = gettype($v);
+                if (self::OBJECT_T === $vt) {
+                    $v = self::mergeObjectValues($recurse, $opts, new stdClass(), $v);
+                } elseif (self::ARRAY_T === $vt) {
+                    $v = self::mergeArrayValues($recurse, $opts, [], $v);
+                }
             }
         }
 
         if (self::optSet($opts, OBJECT_MERGE_OPT_UNIQUE_ARRAYS)) {
-            return array_values(array_unique($out));
+            return array_values(array_unique($out, SORT_REGULAR));
         }
 
         return $out;
@@ -238,17 +258,21 @@ class ObjectMerge
             $leftValue = self::newEmptyValue($rightValue);
         }
 
-        list($leftType, $rightType, $equal) = self::compareTypes($leftValue, $rightValue);
+        list($leftType, $rightType, $equalTypes) = self::compareTypes($leftValue, $rightValue);
 
-        if (!$equal && self::optSet($opts, OBJECT_MERGE_OPT_CONFLICT_EXCEPTION)) {
-            throw new UnexpectedValueException(
-                sprintf(
-                    'Field "%s" has type "%s" on incoming object, but has type "%s" on the root object',
-                    $key,
-                    $rightType,
-                    $leftType
-                )
-            );
+        if (!$equalTypes) {
+            if (self::optSet($opts, OBJECT_MERGE_OPT_CONFLICT_EXCEPTION)) {
+                throw new UnexpectedValueException(
+                    sprintf(
+                        'Field "%s" has type "%s" on incoming object, but has type "%s" on the root object',
+                        $key,
+                        $rightType,
+                        $leftType
+                    )
+                );
+            }
+            // todo: revisit this, inefficient.
+            return self::mergeValues($recurse, $opts, $key, self::newEmptyValue($rightValue), $rightValue);
         }
 
         if (!$recurse || in_array($leftType, self::$_SIMPLE_TYPES, true)) {
@@ -286,7 +310,7 @@ class ObjectMerge
                 continue;
             }
 
-            $root = self::mergeObjectValues($recurse, $opts, $root, $object);
+            $root = self::mergeObjectValues($recurse, $opts, $root, !$recurse ? clone $object : $object);
         }
 
         return $root;

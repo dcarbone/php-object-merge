@@ -123,6 +123,36 @@ class ObjectMergeTest extends TestCase
             'expected' => '{"glossary":{"GlossDiv":{"GlossList":{"GlossEntry":{"Abbrev":"ISO 8879:1986","Acronym":"SGML","GlossDef":{"GlossSeeAlso":["GML","XML"],"leftOnly":["things"],"para":"A meta-markup language, used to create markup languages such as DocBook."},"GlossSee":"markup","GlossTerm":"Standard Generalized Markup Language","ID":"SGML","SortAs":"SGML","bothSides":{"leftKey":"leftValue","rightKey":"rightValue"},"leftOnly":{"leftKey":"leftValue"},"rightOnly":{"rightKey":"rightKey"}}},"leftOnly":"hello","title":"S"},"rightOnly":"hello","title":"example glossary"}}',
             'recurse'  => true,
             'opts'     => OBJECT_MERGE_OPT_UNIQUE_ARRAYS,
+        ],
+        [
+            'objects'  => [
+                '{"arr":[{"key1":"value1"}]}',
+                '{"arr":[{"key2":"value2"}]}',
+                '{"arr":[{"key3":"value3"}]}',
+            ],
+            'expected' => '{"arr":[{"key1":"value1","key2":"value2","key3":"value3"}]}',
+            'recurse'  => true,
+            'opts'     => OBJECT_MERGE_OPT_MERGE_ARRAY_VALUES | OBJECT_MERGE_OPT_UNIQUE_ARRAYS
+        ],
+        [
+            'objects'  => [
+                '{"arr":[{"key1":"value1","arr":[{"key11":"value11"}]}]}',
+                '{"arr":[{"key2":"value2","arr":[{"key22":"value22"}]}]}',
+                '{"arr":[{"key3":"value3","arr":[{"key33":"value33"}]}]}',
+            ],
+            'expected' => '{"arr":[{"key1":"value1","key2":"value2","key3":"value3","arr":[{"key11":"value11","key22":"value22","key33":"value33"}]}]}',
+            'recurse'  => true,
+            'opts'     => OBJECT_MERGE_OPT_MERGE_ARRAY_VALUES | OBJECT_MERGE_OPT_UNIQUE_ARRAYS
+        ],
+        [
+            'objects'  => [
+                '{"arr":[{"key1":"value1","arr":[{"key11":"value11"}]}]}',
+                '{"arr":["not an array"]}',
+                '{"arr":[7]}',
+            ],
+            'expected' => '{"arr":[7]}',
+            'recurse'  => true,
+            'opts'     => OBJECT_MERGE_OPT_MERGE_ARRAY_VALUES | OBJECT_MERGE_OPT_UNIQUE_ARRAYS
         ]
     );
 
@@ -137,7 +167,7 @@ class ObjectMergeTest extends TestCase
         if (JSON_ERROR_NONE !== json_last_error()) {
             throw new RuntimeException(
                 sprintf(
-                    'json_decode returned error while processing test "%s": %s; json =%s',
+                    'json_decode returned error while processing test "%s": %s; json=%s',
                     $test,
                     json_last_error_msg(),
                     $json
