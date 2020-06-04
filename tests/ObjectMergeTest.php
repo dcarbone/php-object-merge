@@ -18,7 +18,6 @@ namespace DCarbone\Tests;
  * limitations under the License.
  */
 
-use DCarbone\ObjectMerge;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use stdClass;
@@ -158,14 +157,14 @@ class ObjectMergeTest extends TestCase
             $expected = $this->doDecode($i, $test['expected']);
             if (isset($test['recurse']) && $test['recurse']) {
                 if (isset($test['opts'])) {
-                    $actual = ObjectMerge::mergeRecursiveOpts($test['opts'], ...$objects);
+                    $actual = object_merge_recursive_opts($test['opts'], ...$objects);
                 } else {
-                    $actual = ObjectMerge::mergeRecursive(...$objects);
+                    $actual = object_merge_recursive(...$objects);
                 }
             } elseif (isset($test['opts'])) {
-                $actual = ObjectMerge::mergeOpts($test['opts'], ...$objects);
+                $actual = object_merge_opts($test['opts'], ...$objects);
             } else {
-                $actual = ObjectMerge::merge(...$objects);
+                $actual = object_merge(...$objects);
             }
             $this->assertEquals($expected, $actual);
         }

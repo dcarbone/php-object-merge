@@ -36,7 +36,7 @@ if (!function_exists('object_merge')) {
      */
     function object_merge(stdClass ...$objects)
     {
-        return ObjectMerge::merge($objects);
+        return ObjectMerge::merge(...$objects);
     }
 }
 if (!function_exists('object_merge_recursive')) {
@@ -46,7 +46,7 @@ if (!function_exists('object_merge_recursive')) {
      */
     function object_merge_recursive(stdClass ...$objects)
     {
-        return ObjectMerge::mergeRecursive($objects);
+        return ObjectMerge::mergeRecursive(...$objects);
     }
 }
 if (!function_exists('object_merge_opts')) {
@@ -57,7 +57,7 @@ if (!function_exists('object_merge_opts')) {
      */
     function object_merge_opts($opts, stdClass ...$objects)
     {
-        return ObjectMerge::mergeOpts($opts, $objects);
+        return ObjectMerge::mergeOpts($opts, ...$objects);
     }
 }
 if (!function_exists('object_merge_recursive_opts')) {
@@ -68,6 +68,6 @@ if (!function_exists('object_merge_recursive_opts')) {
      */
     function object_merge_recursive_opts($opts, stdClass ...$objects)
     {
-        return ObjectMerge::mergeRecursiveOpts($opts, $objects);
+        return ObjectMerge::mergeRecursiveOpts($opts, ...$objects);
     }
 }
