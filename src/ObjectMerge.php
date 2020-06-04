@@ -51,11 +51,6 @@ class ObjectMerge
         self::DOUBLE_T
     );
 
-    /** @var mixed */
-    private static $_leftContext;
-    /** @var mixed */
-    private static $_rightContext;
-
     /**
      * @param stdClass ...$objects
      * @return stdClass|null
@@ -159,7 +154,7 @@ class ObjectMerge
      * @param bool $recurse
      * @param int $opts
      * @param callable $cb
-     * @param mixed $key
+     * @param string|int $key
      * @param array $leftValue
      * @param array $rightValue
      * @return array
@@ -188,6 +183,7 @@ class ObjectMerge
      * @param bool $recurse
      * @param int $opts
      * @param callable $cb
+     * @param string|int $key
      * @param stdClass $leftValue
      * @param stdClass $rightValue
      * @return stdClass
@@ -196,8 +192,8 @@ class ObjectMerge
     {
         $out = new stdClass();
         foreach (array_merge(get_object_vars($leftValue), get_object_vars($rightValue)) as $k => $v) {
-            $leftDefined = isset($leftValue->{$k});
-            $rightDefined = isset($rightValue->{$k});
+            $leftDefined = property_exists($leftValue, $k);
+            $rightDefined = property_exists($rightValue, $k);
             $out->{$k} = self::mergeValues(
                 $recurse,
                 $opts,
@@ -263,9 +259,6 @@ class ObjectMerge
             return $rightValue;
         }
 
-        self::$_leftContext = $leftValue;
-        self::$_rightContext = $rightValue;
-
         if (self::ARRAY_T === $leftType) {
             return self::mergeArrayValues($recurse, $opts, $cb, $key, $leftValue, $rightValue);
         }
@@ -294,17 +287,12 @@ class ObjectMerge
             }
 
             if (null === $root) {
-                $root = self::$_leftContext = clone $object;
+                $root = clone $object;
                 continue;
             }
 
-            self::$_rightContext = $object;
-
             $root = self::mergeObjectValues($recurse, $opts, $cb, null, $root, $object);
         }
-
-        self::$_leftContext = null;
-        self::$_rightContext = null;
 
         return $root;
     }
