@@ -58,7 +58,7 @@ class ObjectMerge
      */
     public function __invoke(stdClass $root, stdClass ...$others)
     {
-        return self::doMerge(false, $root, self::DEFAULT_OPTS, ...$others);
+        return self::doMerge(false, $root, self::DEFAULT_OPTS, $others);
     }
 
     /**
@@ -190,7 +190,7 @@ class ObjectMerge
             return self::mergeArrayValues($leftValue, $rightValue, $opts);
         }
 
-        return self::mergeObjectValues($recurse, $leftValue, $rightValue, $leftValue);
+        return self::mergeObjectValues($recurse, $leftValue, $rightValue, $opts);
     }
 
     /**
