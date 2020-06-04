@@ -107,6 +107,23 @@ class ObjectMergeTest extends TestCase
             ],
             'expected' => '{"key":{"sub":{"sub2":{"sub3":"value"},"sub22":{"sub223":"value2"}}}}',
             'recurse'  => true
+        ],
+        [
+            'objects'  => [
+                '{"glossary":{"GlossDiv":{"GlossList":{"GlossEntry":{"Abbrev":"ISO 8879:1986","Acronym":"SGML","GlossDef":{"GlossSeeAlso":["GML","XML"],"para":"A meta-markup language, used to create markup languages such as DocBook.","leftOnly":["things"]},"GlossSee":"markup","leftOnly":{"leftKey":"leftValue"},"GlossTerm":"Standard Generalized Markup Language","ID":"SGML","SortAs":"SGML","bothSides":{"leftKey":"leftValue"}}},"title":"S","leftOnly":"hello"},"title":"example glossary"}}',
+                '{"glossary":{"GlossDiv":{"GlossList":{"GlossEntry":{"Abbrev":"ISO 8879:1986","Acronym":"SGML","GlossDef":{"GlossSeeAlso":["GML","XML"],"para":"A meta-markup language, used to create markup languages such as DocBook."},"GlossSee":"markup","GlossTerm":"Standard Generalized Markup Language","ID":"SGML","SortAs":"SGML","rightOnly":{"rightKey":"rightKey"},"bothSides":{"rightKey":"rightValue"}}},"title":"S"},"title":"example glossary","rightOnly":"hello"}}',
+            ],
+            'expected' => '{"glossary":{"GlossDiv":{"GlossList":{"GlossEntry":{"Abbrev":"ISO 8879:1986","Acronym":"SGML","GlossDef":{"GlossSeeAlso":["GML","XML","GML","XML"],"leftOnly":["things"],"para":"A meta-markup language, used to create markup languages such as DocBook."},"GlossSee":"markup","GlossTerm":"Standard Generalized Markup Language","ID":"SGML","SortAs":"SGML","bothSides":{"leftKey":"leftValue","rightKey":"rightValue"},"leftOnly":{"leftKey":"leftValue"},"rightOnly":{"rightKey":"rightKey"}}},"leftOnly":"hello","title":"S"},"rightOnly":"hello","title":"example glossary"}}',
+            'recurse'  => true,
+        ],
+        [
+            'objects'  => [
+                '{"glossary":{"GlossDiv":{"GlossList":{"GlossEntry":{"Abbrev":"ISO 8879:1986","Acronym":"SGML","GlossDef":{"GlossSeeAlso":["GML","XML"],"para":"A meta-markup language, used to create markup languages such as DocBook.","leftOnly":["things"]},"GlossSee":"markup","leftOnly":{"leftKey":"leftValue"},"GlossTerm":"Standard Generalized Markup Language","ID":"SGML","SortAs":"SGML","bothSides":{"leftKey":"leftValue"}}},"title":"S","leftOnly":"hello"},"title":"example glossary"}}',
+                '{"glossary":{"GlossDiv":{"GlossList":{"GlossEntry":{"Abbrev":"ISO 8879:1986","Acronym":"SGML","GlossDef":{"GlossSeeAlso":["GML","XML"],"para":"A meta-markup language, used to create markup languages such as DocBook."},"GlossSee":"markup","GlossTerm":"Standard Generalized Markup Language","ID":"SGML","SortAs":"SGML","rightOnly":{"rightKey":"rightKey"},"bothSides":{"rightKey":"rightValue"}}},"title":"S"},"title":"example glossary","rightOnly":"hello"}}',
+            ],
+            'expected' => '{"glossary":{"GlossDiv":{"GlossList":{"GlossEntry":{"Abbrev":"ISO 8879:1986","Acronym":"SGML","GlossDef":{"GlossSeeAlso":["GML","XML"],"leftOnly":["things"],"para":"A meta-markup language, used to create markup languages such as DocBook."},"GlossSee":"markup","GlossTerm":"Standard Generalized Markup Language","ID":"SGML","SortAs":"SGML","bothSides":{"leftKey":"leftValue","rightKey":"rightValue"},"leftOnly":{"leftKey":"leftValue"},"rightOnly":{"rightKey":"rightKey"}}},"leftOnly":"hello","title":"S"},"rightOnly":"hello","title":"example glossary"}}',
+            'recurse'  => true,
+            'opts'     => OBJECT_MERGE_OPT_UNIQUE_ARRAYS,
         ]
     );
 
@@ -120,7 +137,12 @@ class ObjectMergeTest extends TestCase
         $out = json_decode($json);
         if (JSON_ERROR_NONE !== json_last_error()) {
             throw new RuntimeException(
-                sprintf('json_decode returned error while processing test "%s": %s', $test, $json)
+                sprintf(
+                    'json_decode returned error while processing test "%s": %s; json =%s',
+                    $test,
+                    json_last_error_msg(),
+                    $json
+                )
             );
         }
         return $out;

@@ -233,10 +233,17 @@ class ObjectMerge
                     $key
                 )
             );
-        } elseif ($leftUndefined) {
+        }
+
+        // if the right value was undefined, return left value and move on.
+        if ($rightUndefined) {
+            return $leftValue;
+        }
+
+        // if left side undefined, create new empty representation of the right type to allow processing to continue
+        // todo: revisit this, bit wasteful.
+        if ($leftUndefined) {
             $leftValue = self::newEmptyValue($rightValue);
-        } elseif ($rightUndefined) {
-            $rightValue = self::newEmptyValue($leftValue);
         }
 
         list($leftType, $rightType, $equal) = self::compareTypes($leftValue, $rightValue);
@@ -250,10 +257,6 @@ class ObjectMerge
                     $leftType
                 )
             );
-        }
-
-        if ($rightUndefined) {
-            return $leftValue;
         }
 
         if (!$recurse || in_array($leftType, self::$_SIMPLE_TYPES, true)) {
