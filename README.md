@@ -57,7 +57,7 @@ class stdClass#56 (1) {
 
 ## Merge Options
 The `object_merge` and `object_merge_recursive` functions have sister functions named `object_merge_opts` and
-`object_merge_recursive_opts` respectively.  Each of these requires a 2nd `$opts` argument that must be a bitwise
+`object_merge_recursive_opts` respectively.  Each of these has a required `$opts` argument that must be a bitwise
 inclusive or of your desired options.
 
 #### `OBJECT_MERGE_OPT_CONFLICT_OVERWRITE`
@@ -95,7 +95,7 @@ $o1 = json_decode('{"key":'.PHP_INT_MAX.'}');
 $o2 = json_decode('{"key":true');
 $o3 = json_decode('{"key":"not a number"}');
 
-$out = object_merge_opts($o1, OBJECT_MERGE_OPT_CONFLICT_EXCEPTION, $o2, $o3);
+$out = object_merge_opts(OBJECT_MERGE_OPT_CONFLICT_EXCEPTION, $o1, $o2, $o3);
 
 // UnexpectedValueException thrown
 ```
@@ -115,7 +115,7 @@ $o1 = json_decode('{"key":["one"]}');
 $o2 = json_decode('{"key":["one","two"]}');
 $o3 = json_decode('{"key":["one","two","three"]}');
 
-$out = object_merge_recursive_opts($o1, OBJECT_MERGE_OPT_UNIQUE_ARRAYS, $o2, $o3);
+$out = object_merge_recursive_opts(OBJECT_MERGE_OPT_UNIQUE_ARRAYS, $o1, $o2, $o3);
 
 var_dump($out);
 

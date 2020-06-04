@@ -32,92 +32,79 @@ class ObjectMergeTest extends TestCase
 {
     private static $_tests = array(
         [
-            'root'     => '{"key":"value"}',
-            'others'   => ['{"key2":"value2"}'],
+            'objects'  => ['{"key":"value"}', '{"key2":"value2"}'],
             'expected' => '{"key":"value","key2":"value2"}',
         ],
         [
-            'root'     => '{"key":"value"}',
-            'others'   => ['{"key2":"value2"}', '{"key3":"value3"}'],
+            'objects'  => ['{"key":"value"}', '{"key2":"value2"}', '{"key3":"value3"}'],
             'expected' => '{"key":"value","key2":"value2","key3":"value3"}',
         ],
         [
-            'root'     => '{"key":"value"}',
-            'others'   => ['{"key2":"value2"}'],
+            'objects'  => ['{"key":"value"}', '{"key2":"value2"}'],
             'expected' => '{"key":"value","key2":"value2"}',
         ],
         [
-            'root'     => '{"key":["one"]}',
-            'others'   => ['{"key":["two"]}'],
+            'objects'  => ['{"key":["one"]}', '{"key":["two"]}'],
             'expected' => '{"key":["two"]}',
         ],
         [
-            'root'     => '{"key":' . PHP_INT_MAX . '}',
-            'others'   => ['{"key":true}', '{"key":"not a number"}'],
+            'objects'  => ['{"key":' . PHP_INT_MAX . '}', '{"key":true}', '{"key":"not a number"}'],
             'expected' => '{"key":"not a number"}'
         ],
         // todo: figure out how to test exceptions without doing a bunch of work
         //        [
-        //            'root'     => '{"key":' . PHP_INT_MAX . '}',
-        //            'others'   => ['{"key":true}', '{"key":"not a number"}'],
+        //            'objects'   => ['{"key":' . PHP_INT_MAX . '}','{"key":true}', '{"key":"not a number"}'],
         //            'expected' => '{"key":"not a number"}',
         //            'opts'     => OBJECT_MERGE_OPT_CONFLICT_EXCEPTION
         //        ],
         [
-            'root'     => '{"key":["one"]}',
-            'others'   => ['{"key":["two"]}', '{"key":["three"]}'],
+            'objects'  => ['{"key":["one"]}', '{"key":["two"]}', '{"key":["three"]}'],
             'expected' => '{"key":["one","two","three"]}',
             'recurse'  => true,
         ],
         [
-            'root'     => '{"key":1}',
-            'others'   => ['{"key":"1"}'],
+            'objects'  => ['{"key":1}', '{"key":"1"}'],
             'expected' => '{"key":"1"}',
             'recurse'  => true,
         ],
         [
-            'root'     => '{"key":{"subkey":"subvalue"}}',
-            'others'   => ['{"key":{"subkey2":"subvalue2"}}'],
+            'objects'  => ['{"key":{"subkey":"subvalue"}}', '{"key":{"subkey2":"subvalue2"}}'],
             'expected' => '{"key":{"subkey":"subvalue","subkey2":"subvalue2"}}',
             'recurse'  => true,
         ],
         [
-            'root'     => '{"key":1}',
-            'others'   => ['{"key":"1","key2":1}'],
+            'objects'  => ['{"key":1}', '{"key":"1","key2":1}'],
             'expected' => '{"key":"1","key2":1}',
         ],
         [
-            'root'     => '{"key":["one"]}',
-            'others'   => ['{"key":["one"]}', '{"key":["one"]}'],
+            'objects'  => ['{"key":["one"]}', '{"key":["one"]}', '{"key":["one"]}'],
             'expected' => '{"key":["one","one","one"]}',
             'recurse'  => true,
         ],
         [
-            'root'     => '{"key":["one"]}',
-            'others'   => ['{"key":["one","two"]}', '{"key":["one","two","three"]}'],
+            'objects'  => ['{"key":["one"]}', '{"key":["one","two"]}', '{"key":["one","two","three"]}'],
             'expected' => '{"key":["one","two","three"]}',
             'recurse'  => true,
             'opts'     => OBJECT_MERGE_OPT_UNIQUE_ARRAYS,
         ],
         [
-            'root'     => '{"key":{}}',
-            'others'   => ['{"key":{}}'],
+            'objects'  => ['{"key":{}}', '{"key":{}}'],
             'expected' => '{"key":{}}',
         ],
         [
-            'root'     => '{"key":{"nope":"should not be here"}}',
-            'others'   => ['{"key":{}}'],
+            'objects'  => ['{"key":{"nope":"should not be here"}}', '{"key":{}}'],
             'expected' => '{"key":{}}',
         ],
         [
-            'root'     => '{"key":{"yep":"i should be here"}}',
-            'others'   => ['{"key":{}}'],
+            'objects'  => ['{"key":{"yep":"i should be here"}}', '{"key":{}}'],
             'expected' => '{"key":{"yep":"i should be here"}}',
             'recurse'  => true,
         ],
         [
-            'root'     => '{"key":{"sub":{"sub2":{"sub3":"value"}}}}',
-            'others'   => ['{"key":{"sub":{"sub22":{"sub223":"value2"}}}}'],
+            'objects'  => [
+                '{"key":{"sub":{"sub2":{"sub3":"value"}}}}',
+                '{"key":{"sub":{"sub22":{"sub223":"value2"}}}}'
+            ],
             'expected' => '{"key":{"sub":{"sub2":{"sub3":"value"},"sub22":{"sub223":"value2"}}}}',
             'recurse'  => true
         ]
@@ -142,22 +129,21 @@ class ObjectMergeTest extends TestCase
     public function testObjectMerge()
     {
         foreach (self::$_tests as $i => $test) {
-            $root = $this->doDecode($i, $test['root']);
-            $others = [];
-            foreach ($test['others'] as $other) {
-                $others[] = $this->doDecode($i, $other);
+            $objects = [];
+            foreach ($test['objects'] as $object) {
+                $objects[] = $this->doDecode($i, $object);
             }
             $expected = $this->doDecode($i, $test['expected']);
             if (isset($test['recurse']) && $test['recurse']) {
                 if (isset($test['opts'])) {
-                    $actual = ObjectMerge::mergeRecursiveOpts($root, $test['opts'], ...$others);
+                    $actual = ObjectMerge::mergeRecursiveOpts($test['opts'], ...$objects);
                 } else {
-                    $actual = ObjectMerge::mergeRecursive($root, ...$others);
+                    $actual = ObjectMerge::mergeRecursive(...$objects);
                 }
             } elseif (isset($test['opts'])) {
-                $actual = ObjectMerge::mergeOpts($root, $test['opts'], ...$others);
+                $actual = ObjectMerge::mergeOpts($test['opts'], ...$objects);
             } else {
-                $actual = ObjectMerge::merge($root, ...$others);
+                $actual = ObjectMerge::merge(...$objects);
             }
             $this->assertEquals($expected, $actual);
         }

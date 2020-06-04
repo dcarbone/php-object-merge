@@ -51,56 +51,56 @@ class ObjectMerge
         self::DOUBLE_T
     );
 
+    /** @var mixed */
+    private static $_leftContext;
+    /** @var mixed */
+    private static $_rightContext;
+
     /**
-     * @param stdClass $root
-     * @param stdClass ...$others
-     * @return stdClass
+     * @param stdClass ...$objects
+     * @return stdClass|null
      */
-    public function __invoke(stdClass $root, stdClass ...$others)
+    public function __invoke(stdClass ...$objects)
     {
-        return self::doMerge(false, $root, self::DEFAULT_OPTS, $others);
+        return self::doMerge(false, self::DEFAULT_OPTS, null, $objects);
     }
 
     /**
-     * @param stdClass $root
+     * @param stdClass ...$objects
+     * @return stdClass
+     */
+    public static function merge(stdClass ...$objects)
+    {
+        return self::doMerge(false, self::DEFAULT_OPTS, null, $objects);
+    }
+
+    /**
+     * @param stdClass ...$objects
+     * @return stdClass
+     */
+    public static function mergeRecursive(stdClass ...$objects)
+    {
+        return self::doMerge(true, self::DEFAULT_OPTS, null, $objects);
+    }
+
+    /**
      * @param $opts
-     * @param stdClass ...$others
+     * @param stdClass ...$objects
      * @return stdClass
      */
-    public static function mergeOpts(stdClass $root, $opts, stdClass ...$others)
+    public static function mergeOpts($opts, stdClass ...$objects)
     {
-        return self::doMerge(false, $root, $opts, $others);
+        return self::doMerge(false, $opts, null, $objects);
     }
 
     /**
-     * @param stdClass $root
-     * @param stdClass ...$others
-     * @return stdClass
-     */
-    public static function merge(stdClass $root, stdClass ...$others)
-    {
-        return self::doMerge(false, $root, self::DEFAULT_OPTS, $others);
-    }
-
-    /**
-     * @param stdClass $root
      * @param int $opts
-     * @param stdClass ...$others
+     * @param stdClass ...$objects
      * @return stdClass
      */
-    public static function mergeRecursiveOpts(stdClass $root, $opts, stdClass ...$others)
+    public static function mergeRecursiveOpts($opts, stdClass ...$objects)
     {
-        return self::doMerge(true, $root, $opts, $others);
-    }
-
-    /**
-     * @param stdClass $root
-     * @param stdClass ...$others
-     * @return stdClass
-     */
-    public static function mergeRecursive(stdClass $root, stdClass ...$others)
-    {
-        return self::doMerge(true, $root, self::DEFAULT_OPTS, $others);
+        return self::doMerge(true, $opts, null, $objects);
     }
 
     /**
@@ -114,114 +114,195 @@ class ObjectMerge
     }
 
     /**
-     * @param array $orig
-     * @param array $inc
-     * @param int $opts
+     * @param mixed $in
+     * @return array|bool|float|int|stdClass|string|null
+     */
+    private static function newEmptyValue($in)
+    {
+        $inT = gettype($in);
+        if (self::STRING_T === $inT) {
+            return '';
+        } elseif (self::INTEGER_T === $inT) {
+            return 0;
+        } elseif (self::DOUBLE_T === $inT) {
+            return 0.0;
+        } elseif (self::BOOLEAN_T === $inT) {
+            return false;
+        } elseif (self::ARRAY_T === $inT) {
+            return [];
+        } elseif (self::OBJECT_T === $inT) {
+            return new stdClass();
+        } elseif (self::RESOURCE_T === $inT || self::NULL_T === $inT) {
+            return null;
+        } else {
+            throw new UnexpectedValueException(sprintf('Unknown value type provided: %s', $inT));
+        }
+    }
+
+    /**
+     * @param mixed $left
+     * @param mixed $right
      * @return array
      */
-    private static function mergeArrayValues(array $orig, array $inc, $opts)
+    private static function compareTypes($left, $right)
     {
-        $out = $orig;
-        foreach ($inc as $v) {
-            $out[] = $v;
+        $leftType = gettype($left);
+        $rightType = gettype($right);
+        return [
+            $leftType,
+            $rightType,
+            ($leftType === $rightType) || (self::NULL_T === $leftType && self::RESOURCE_T === $rightType) || (self::RESOURCE_T === $leftType && self::NULL_T === $rightType)
+        ];
+    }
+
+    /**
+     * @param bool $recurse
+     * @param int $opts
+     * @param callable $cb
+     * @param mixed $key
+     * @param array $leftValue
+     * @param array $rightValue
+     * @return array
+     */
+    private static function mergeArrayValues($recurse, $opts, $cb, $key, array $leftValue, array $rightValue)
+    {
+        $out = array_merge($leftValue, $rightValue);
+
+        foreach ($out as $i => &$v) {
+            $vt = gettype($v);
+            if (self::OBJECT_T === $vt) {
+                $v = self::mergeObjectValues($recurse, $opts, $cb, $i, new stdClass(), $v);
+            } elseif (self::ARRAY_T === $vt) {
+                $v = self::mergeArrayValues($recurse, $opts, $cb, $i, [], $v);
+            }
         }
+
         if (self::optSet($opts, OBJECT_MERGE_OPT_UNIQUE_ARRAYS)) {
             return array_values(array_unique($out));
         }
+
         return $out;
     }
 
     /**
      * @param bool $recurse
-     * @param stdClass $orig
-     * @param stdClass $inc
      * @param int $opts
+     * @param callable $cb
+     * @param stdClass $leftValue
+     * @param stdClass $rightValue
      * @return stdClass
      */
-    private static function mergeObjectValues($recurse, stdClass $orig, stdClass $inc, $opts)
+    private static function mergeObjectValues($recurse, $opts, $cb, $key, stdClass $leftValue, stdClass $rightValue)
     {
-        $out = $orig;
-        foreach (get_object_vars($inc) as $k => $v) {
-            if (!isset($out->{$k})) {
-                $out->{$k} = $v;
-            } else {
-                $out->{$k} = self::mergeValues($recurse, $k, $out->{$k}, $v, $opts);
-            }
+        $out = new stdClass();
+        foreach (array_merge(get_object_vars($leftValue), get_object_vars($rightValue)) as $k => $v) {
+            $leftDefined = isset($leftValue->{$k});
+            $rightDefined = isset($rightValue->{$k});
+            $out->{$k} = self::mergeValues(
+                $recurse,
+                $opts,
+                $cb,
+                $k,
+                $leftDefined ? $leftValue->{$k} : OBJECT_MERGE_UNDEFINED,
+                $rightDefined ? $rightValue->{$k} : OBJECT_MERGE_UNDEFINED
+            );
         }
         return $out;
     }
 
     /**
      * @param bool $recurse
+     * @param int $opts
+     * @param callable $cb
      * @param string|int $key
      * @param mixed $leftValue
      * @param mixed $rightValue
-     * @param int $opts
      * @return mixed
      */
-    private static function mergeValues($recurse, $key, $leftValue, $rightValue, $opts)
+    private static function mergeValues($recurse, $opts, $cb, $key, $leftValue, $rightValue)
     {
-        $leftType = gettype($leftValue);
-        $rightType = gettype($rightValue);
+        $leftUndefined = OBJECT_MERGE_UNDEFINED === $leftValue;
+        $rightUndefined = OBJECT_MERGE_UNDEFINED === $rightValue;
 
-        if ($leftType !== $rightType) {
-            if (self::optSet($opts, OBJECT_MERGE_OPT_CONFLICT_EXCEPTION)) {
-                throw new UnexpectedValueException(
-                    sprintf(
-                        'Field "%s" has type "%s" on incoming object, but has type "%s" on the root object',
-                        $key,
-                        $rightType,
-                        $leftType
-                    )
-                );
-            }
-            // clone to avoid side-effects
-            if (self::OBJECT_T === $rightType) {
-                return clone $rightValue;
-            }
+        if ($leftUndefined && $rightUndefined) {
+            throw new \LogicException(
+                sprintf(
+                    'Both left and right values are "undefined": $recurse=%s; $opts=%d; $key=%s',
+                    $recurse ? 'true' : 'false',
+                    $opts,
+                    $key
+                )
+            );
+        } elseif ($leftUndefined) {
+            $leftValue = self::newEmptyValue($rightValue);
+        } elseif ($rightUndefined) {
+            $rightValue = self::newEmptyValue($leftValue);
+        }
+
+        list($leftType, $rightType, $equal) = self::compareTypes($leftValue, $rightValue);
+
+        if (!$equal && self::optSet($opts, OBJECT_MERGE_OPT_CONFLICT_EXCEPTION)) {
+            throw new UnexpectedValueException(
+                sprintf(
+                    'Field "%s" has type "%s" on incoming object, but has type "%s" on the root object',
+                    $key,
+                    $rightType,
+                    $leftType
+                )
+            );
+        }
+
+        if ($rightUndefined) {
+            return $leftValue;
+        }
+
+        if (!$recurse || in_array($leftType, self::$_SIMPLE_TYPES, true)) {
             return $rightValue;
         }
 
-        if (!$recurse || in_array($leftType, self::$_SIMPLE_TYPES)) {
-            return $rightValue;
-        }
+        self::$_leftContext = $leftValue;
+        self::$_rightContext = $rightValue;
 
         if (self::ARRAY_T === $leftType) {
-            return self::mergeArrayValues($leftValue, $rightValue, $opts);
+            return self::mergeArrayValues($recurse, $opts, $cb, $key, $leftValue, $rightValue);
         }
 
-        return self::mergeObjectValues($recurse, $leftValue, $rightValue, $opts);
+        return self::mergeObjectValues($recurse, $opts, $cb, $key, $leftValue, $rightValue);
     }
 
     /**
      * @param bool $recurse
-     * @param stdClass $root
      * @param int $opts
-     * @param stdClass[] $others
-     * @return stdClass
+     * @param callable $cb
+     * @param array $objects
+     * @return mixed|null
      */
-    private static function doMerge($recurse, stdClass $root, $opts, array $others)
+    private static function doMerge($recurse, $opts, $cb, array $objects)
     {
-        if (0 === count($others)) {
-            return $root;
+        if ([] === $objects) {
+            return null;
         }
 
-        $new = clone $root;
+        $root = null;
 
-        foreach ($others as $other) {
-            if (null === $other) {
+        foreach ($objects as $object) {
+            if (null === $object) {
                 continue;
             }
 
-            foreach (get_object_vars($other) as $k => $v) {
-                if (!isset($new->{$k})) {
-                    $new->{$k} = $v;
-                } else {
-                    $new->{$k} = self::mergeValues($recurse, $k, $new->{$k}, $v, $opts);
-                }
+            if (null === $root) {
+                $root = self::$_leftContext = clone $object;
+                continue;
             }
+
+            self::$_rightContext = $object;
+
+            $root = self::mergeObjectValues($recurse, $opts, $cb, null, $root, $object);
         }
 
-        return $new;
+        self::$_leftContext = null;
+        self::$_rightContext = null;
+
+        return $root;
     }
 }

@@ -18,49 +18,56 @@
 
 use DCarbone\ObjectMerge;
 
-if (!function_exists('object_merge')) {
+if (!function_exists('object_merge_value_undefined')) {
     /**
-     * @param stdClass $root
-     * @param stdClass ...$others
-     * @return stdClass
+     * @param mixed $value
+     * @return bool
      */
-    function object_merge(stdClass $root, stdClass ...$others)
+    function object_merge_value_undefined($value)
     {
-        return ObjectMerge::merge($root, ...$others);
+        return $value === OBJECT_MERGE_UNDEFINED;
     }
 }
-if (!function_exists('object_merge_opts')) {
+
+if (!function_exists('object_merge')) {
     /**
-     * @param stdClass $root
-     * @param int $opts
-     * @param stdClass ...$others
+     * @param stdClass ...$objects
      * @return stdClass
      */
-    function object_merge_opts(stdClass $root, $opts, stdClass ...$others)
+    function object_merge(stdClass ...$objects)
     {
-        return ObjectMerge::mergeOpts($root, $opts, ...$others);
+        return ObjectMerge::merge($objects);
     }
 }
 if (!function_exists('object_merge_recursive')) {
     /**
-     * @param stdClass $root
-     * @param stdClass ...$others
+     * @param stdClass ...$objects
      * @return stdClass
      */
-    function object_merge_recursive(stdClass $root, stdClass ...$others)
+    function object_merge_recursive(stdClass ...$objects)
     {
-        return ObjectMerge::mergeRecursive($root, ...$others);
+        return ObjectMerge::mergeRecursive($objects);
+    }
+}
+if (!function_exists('object_merge_opts')) {
+    /**
+     * @param int $opts
+     * @param stdClass ...$objects
+     * @return stdClass
+     */
+    function object_merge_opts($opts, stdClass ...$objects)
+    {
+        return ObjectMerge::mergeOpts($opts, $objects);
     }
 }
 if (!function_exists('object_merge_recursive_opts')) {
     /**
-     * @param stdClass $root
      * @param int $opts
-     * @param stdClass ...$others
+     * @param stdClass ...$objects
      * @return stdClass
      */
-    function object_merge_recursive_opts(stdClass $root, $opts, stdClass ...$others)
+    function object_merge_recursive_opts($opts, stdClass ...$objects)
     {
-        return ObjectMerge::mergeRecursiveOpts($root, $opts, ...$others);
+        return ObjectMerge::mergeRecursiveOpts($opts, $objects);
     }
 }
