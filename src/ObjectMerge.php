@@ -183,7 +183,9 @@ class ObjectMerge
         return [
             $leftType,
             $rightType,
-            ($leftType === $rightType) || (self::NULL_T === $leftType && self::RESOURCE_T === $rightType) || (self::RESOURCE_T === $leftType && self::NULL_T === $rightType)
+            ($leftType === $rightType)
+            || (self::NULL_T === $leftType && self::RESOURCE_T === $rightType)
+            || (self::RESOURCE_T === $leftType && self::NULL_T === $rightType)
         ];
     }
 
@@ -268,10 +270,13 @@ class ObjectMerge
     {
         self::$_context[self::$_depth] = $key;
 
-        $leftUndefined = OBJECT_MERGE_UNDEFINED === $leftValue;
-        $rightUndefined = OBJECT_MERGE_UNDEFINED === $rightValue;
+        $leftUndefined = object_merge_value_undefined($leftValue, self::$_opts);
+        $rightUndefined = object_merge_value_undefined($rightValue, self::$_opts);
 
         if ($leftUndefined && $rightUndefined) {
+            if (self::_optSet(OBJECT_MERGE_OPT_NULL_AS_UNDEFINED)) {
+                return null;
+            }
             throw new LogicException(self::_exceptionMessage('Both left and right values are "undefined"'));
         }
 
