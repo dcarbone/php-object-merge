@@ -208,3 +208,29 @@ class stdClass#56 (1) {
 }
 */
 ```
+
+#### `OBJECT_MERGE_OPT_NULL_AS_UNDEFINED`
+
+When specified, NULL values are treated as UNDEFINED, meaning they will not cause a type conflict to be risen and the
+non-null value will be used in the merge.
+
+This can be useful if you do not want to have _all_ type conflicts to be overwritten with the right-hand value, but want
+to ignore null to not null differences.
+
+Example:
+```php
+$o1 = json_decode('{"key":"value"}');
+$o2 = json_decode('{"key":null}');
+$o3 = json_decode('{"key":"different value"}');
+
+$out = object_merge_recursive_opts(OBJECT_MERGE_OPT_NULL_AS_UNDEFINED, $o1, $o2, $o3); 
+
+var_dump($out);
+
+/*
+class stdClass#161 (1) {
+  public $key =>
+  string(15) "different value"
+}
+*/
+```
