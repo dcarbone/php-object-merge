@@ -32,7 +32,7 @@ class ObjectMergeState
     public $recursive;
 
     /**
-     * Specified merge option
+     * Specified merge options
      *
      * @var int
      */
