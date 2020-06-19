@@ -34,7 +34,8 @@
   "autoload-dev": {
     "files": [
       "files/constants.php",
-      "files/functions.php"
+      "files/functions.php",
+      "tests/functions.php"
     ],
     "psr-4": {
       "DCarbone\\": "src/",

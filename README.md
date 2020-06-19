@@ -55,6 +55,129 @@ class stdClass#56 (1) {
 */
 ```
 
+## Callback
+If you wish to sometimes manually handle the merging of two values, you may do so using the provided `_callback`
+functions.
+
+### Callback providing
+
+You may provide any php-callable notation you wish, including:
+
+```php
+object_merge_callback(0, 'function_name', ...$objects);
+object_merge_callback(0, $closure, ...$objects);
+object_merge_callback(0, ['FQCN', 'function_name'], ...$objects);
+object_merge_callback(0, [$instance, 'function_name'], ...$objects);
+```
+
+### Callback arguments
+
+The callback function will be provided exactly one parameter, and it will always be an instance of 
+[ObjectMergeState](./src/ObjectMergeState.php).
+
+### Callback response
+
+If the callback function returns _anything_ other than an instance of [ObjectMergeResult](./src/ObjectMergeResult.php),
+it is used outright as the value of the merge, without further processing or recursion.
+
+See comments on [ObjectMergeResult](./src/ObjectMergeResult.php) for how each parameter is handled. 
+
+```php
+use DCarbone\ObjectMergeResult;
+use DCarbone\ObjectMergeState;
+
+/**
+ * @param ObjectMergeState $state
+ * @return ObjectMergeResult|null
+ */
+function merge_int_to_null(ObjectMergeState $state)
+{
+    if (is_int($state->leftValue)) {
+        return null;
+    }
+    return new ObjectMergeResult(true);
+}
+
+/**
+ * @return ObjectMergeResult
+ */
+function merge_always_continue()
+{
+    return new ObjectMergeResult(true);
+}
+
+/**
+ * @param ObjectMergeState $state
+ * @return mixed
+ */
+function merge_use_left_side(ObjectMergeState $state)
+{
+    return $state->leftValue;
+}
+
+$o1 = json_decode('{"int1":1,"str1":"string","int2":2,"float":3.2,"arr":[]}');
+$o2 = json_decode('{"int1":-3432,"str1":"sandwiches","int2":' . PHP_INT_MAX . ',"float":2.3,"arr":["onevalue"]}');
+
+$out1 = object_merge_callback(0, 'merge_int_to_null', $o1, $o2);
+$out2 = object_merge_callback(0, 'merge_always_continue', $o1, $o2);
+$out3 = object_merge_callback(0, 'merge_use_left_side', $o1, $o2);
+
+var_dump($out1);
+/*
+class stdClass#87 (5) {
+  public $int1 =>
+  NULL
+  public $str1 =>
+  string(10) "sandwiches"
+  public $int2 =>
+  NULL
+  public $float =>
+  double(2.3)
+  public $arr =>
+  array(1) {
+    [0] =>
+    string(8) "onevalue"
+  }
+}
+*/
+
+var_dump($out2);
+/*
+class stdClass#160 (5) {
+  public $int1 =>
+  int(-3432)
+  public $str1 =>
+  string(10) "sandwiches"
+  public $int2 =>
+  int(9223372036854775807)
+  public $float =>
+  double(2.3)
+  public $arr =>
+  array(1) {
+    [0] =>
+    string(8) "onevalue"
+  }
+}
+*/
+
+var_dump($out3);
+/*
+class stdClass#123 (5) {
+  public $int1 =>
+  int(1)
+  public $str1 =>
+  string(6) "string"
+  public $int2 =>
+  int(2)
+  public $float =>
+  double(3.2)
+  public $arr =>
+  array(0) {
+  }
+}
+*/
+``` 
+
 ## Merge Options
 The `object_merge` and `object_merge_recursive` functions have sister functions named `object_merge_opts` and
 `object_merge_recursive_opts` respectively.  Each of these has a required `$opts` argument that must be a bitwise

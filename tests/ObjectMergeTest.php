@@ -18,6 +18,7 @@ namespace DCarbone\Tests;
  * limitations under the License.
  */
 
+use DCarbone\ObjectMerge;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use stdClass;
@@ -29,7 +30,7 @@ use stdClass;
  */
 class ObjectMergeTest extends TestCase
 {
-    private static $_tests = array(
+    private static $_tests = [
         [
             'objects'  => ['{"key":"value"}', '{"key2":"value2"}'],
             'expected' => '{"key":"value","key2":"value2"}',
@@ -170,7 +171,6 @@ class ObjectMergeTest extends TestCase
                 '{"key":"different value"}'
             ],
             'expected' => '{"key":"different value"}',
-            'recurse'  => false,
             'opts'     => OBJECT_MERGE_OPT_NULL_AS_UNDEFINED
         ],
         [
@@ -182,7 +182,31 @@ class ObjectMergeTest extends TestCase
             'recurse'  => true,
             'opts'     => OBJECT_MERGE_OPT_MERGE_ARRAY_VALUES | OBJECT_MERGE_OPT_UNIQUE_ARRAYS | OBJECT_MERGE_OPT_NULL_AS_UNDEFINED
         ],
-    );
+        [
+            'objects'  => [
+                '{"int1":1,"str1":"string","int2":2,"float":3.2,"arr":[]}',
+                '{"int1":-3432,"str1":"sandwiches","int2":' . PHP_INT_MAX . ',"float":2.3,"arr":["onevalue"]}',
+            ],
+            'expected' => '{"int1":null,"str1":"sandwiches","int2":null,"float":2.3,"arr":["onevalue"]}',
+            'cb'       => 'merge_int_to_null'
+        ],
+        [
+            'objects'  => [
+                '{"int1":1,"str1":"string","int2":2,"float":3.2,"arr":[]}',
+                '{"int1":-3432,"str1":"sandwiches","int2":' . PHP_INT_MAX . ',"float":2.3,"arr":["onevalue"]}',
+            ],
+            'expected' => '{"int1":-3432,"str1":"sandwiches","int2":' . PHP_INT_MAX . ',"float":2.3,"arr":["onevalue"]}',
+            'cb'       => 'merge_always_continue'
+        ],
+        [
+            'objects'  => [
+                '{"int1":1,"str1":"string","int2":2,"float":3.2,"arr":[]}',
+                '{"int1":-3432,"str1":"sandwiches","int2":' . PHP_INT_MAX . ',"float":2.3,"arr":["onevalue"]}',
+            ],
+            'expected' => '{"int1":1,"str1":"string","int2":2,"float":3.2,"arr":[]}',
+            'cb'       => 'merge_use_left_side'
+        ],
+    ];
 
     /**
      * @param string|int $test
@@ -213,14 +237,24 @@ class ObjectMergeTest extends TestCase
                 $objects[] = $this->doDecode($i, $object);
             }
             $expected = $this->doDecode($i, $test['expected']);
-            if (isset($test['recurse']) && $test['recurse']) {
-                if (isset($test['opts'])) {
-                    $actual = object_merge_recursive_opts($test['opts'], ...$objects);
+            $recurse = isset($test['recurse']) && boolval($test['recurse']);
+            $optsDefined = isset($test['opts']);
+            $opts = $optsDefined ? $test['opts'] : ObjectMerge::DEFAULT_OPTS;
+            $cb = isset($test['cb']) ? $test['cb'] : null;
+            if (null !== $cb) {
+                if ($recurse) {
+                    $actual = object_merge_recursive_callback($opts, $cb, ...$objects);
                 } else {
-                    $actual = object_merge_recursive(...$objects);
+                    $actual = object_merge_callback($opts, $cb, ...$objects);
                 }
-            } elseif (isset($test['opts'])) {
-                $actual = object_merge_opts($test['opts'], ...$objects);
+            } elseif ($optsDefined) {
+                if ($recurse) {
+                    $actual = object_merge_recursive_opts($opts, ...$objects);
+                } else {
+                    $actual = object_merge_opts($opts, ...$objects);
+                }
+            } elseif ($recurse) {
+                $actual = object_merge_recursive(...$objects);
             } else {
                 $actual = object_merge(...$objects);
             }

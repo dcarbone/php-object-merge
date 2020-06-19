@@ -75,3 +75,27 @@ if (!function_exists('object_merge_recursive_opts')) {
         return ObjectMerge::mergeRecursiveOpts($opts, ...$objects);
     }
 }
+if (!function_exists('object_merge_callback')) {
+    /**
+     * @param int $opts
+     * @param callable $cb
+     * @param stdClass ...$objects
+     * @return stdClass|null
+     */
+    function object_merge_callback($opts, $cb, stdClass ...$objects)
+    {
+        return ObjectMerge::mergeCallback($opts, $cb, ...$objects);
+    }
+}
+if (!function_exists('object_merge_recursive_callback')) {
+    /**
+     * @param int $opts
+     * @param callable $cb
+     * @param stdClass ...$objects
+     * @return stdClass|null
+     */
+    function object_merge_recursive_callback($opts, $cb, stdClass ...$objects)
+    {
+        return ObjectMerge::mergeRecursiveCallback($opts, $cb, ...$objects);
+    }
+}

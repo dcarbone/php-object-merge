@@ -43,9 +43,11 @@ class ObjectMerge
     const OBJECT_T = 'object';
 
     /** @var bool */
-    private static $_recurse;
+    private static $_recursive;
     /** @var int */
     private static $_opts;
+    /** @var callable */
+    private static $_cb;
 
     /** @var int */
     private static $_depth = -1;
@@ -53,14 +55,14 @@ class ObjectMerge
     private static $_context = [];
 
     // list of types considered "simple"
-    private static $_SIMPLE_TYPES = array(
+    private static $_SIMPLE_TYPES = [
         self::NULL_T,
         self::RESOURCE_T,
         self::STRING_T,
         self::BOOLEAN_T,
         self::INTEGER_T,
         self::DOUBLE_T
-    );
+    ];
 
     /**
      * @param stdClass ...$objects
@@ -68,7 +70,7 @@ class ObjectMerge
      */
     public function __invoke(stdClass ...$objects)
     {
-        return self::_doMerge(false, self::DEFAULT_OPTS, $objects);
+        return self::_doMerge(false, self::DEFAULT_OPTS, null, $objects);
     }
 
     /**
@@ -77,7 +79,7 @@ class ObjectMerge
      */
     public static function merge(stdClass ...$objects)
     {
-        return self::_doMerge(false, self::DEFAULT_OPTS, $objects);
+        return self::_doMerge(false, self::DEFAULT_OPTS, null, $objects);
     }
 
     /**
@@ -86,7 +88,7 @@ class ObjectMerge
      */
     public static function mergeRecursive(stdClass ...$objects)
     {
-        return self::_doMerge(true, self::DEFAULT_OPTS, $objects);
+        return self::_doMerge(true, self::DEFAULT_OPTS, null, $objects);
     }
 
     /**
@@ -96,7 +98,7 @@ class ObjectMerge
      */
     public static function mergeOpts($opts, stdClass ...$objects)
     {
-        return self::_doMerge(false, $opts, $objects);
+        return self::_doMerge(false, $opts, null, $objects);
     }
 
     /**
@@ -106,7 +108,69 @@ class ObjectMerge
      */
     public static function mergeRecursiveOpts($opts, stdClass ...$objects)
     {
-        return self::_doMerge(true, $opts, $objects);
+        return self::_doMerge(true, $opts, null, $objects);
+    }
+
+    /**
+     * @param int $opts
+     * @param callable $cb
+     * @param stdClass ...$objects
+     * @return stdClass
+     */
+    public static function mergeCallback($opts, $cb, stdClass ...$objects)
+    {
+        return self::_doMerge(false, $opts, $cb, $objects);
+    }
+
+    /**
+     * @param int $opts
+     * @param callable $cb
+     * @param stdClass ...$objects
+     * @return stdClass
+     */
+    public static function mergeRecursiveCallback($opts, $cb, stdClass ...$objects)
+    {
+        return self::_doMerge(true, $opts, $cb, $objects);
+    }
+
+    /**
+     * @return ObjectMergeState
+     */
+    public static function partialState()
+    {
+        return self::_partialState();
+    }
+
+    /**
+     * @return ObjectMergeState
+     */
+    private static function _partialState()
+    {
+        $state = new ObjectMergeState();
+
+        $state->recursive = self::$_recursive;
+        $state->opts = self::$_opts;
+        $state->depth = self::$_depth;
+        $state->context = self::$_context;
+
+        return $state;
+    }
+
+    /**
+     * @param string|int $key
+     * @param mixed $leftValue
+     * @param mixed $rightValue
+     * @return ObjectMergeState
+     */
+    private static function _fullState($key, $leftValue, $rightValue)
+    {
+        $state = self::_partialState();
+
+        $state->key = $key;
+        $state->leftValue = $leftValue;
+        $state->rightValue = $rightValue;
+
+        return $state;
     }
 
     private static function _down()
@@ -127,9 +191,9 @@ class ObjectMerge
     private static function _exceptionMessage($prefix)
     {
         return sprintf(
-            '%s - $recurse=%s; $opts=%d; $depth=%d; $context=%s',
+            '%s - $recursive=%s; $opts=%d; $depth=%d; $context=%s',
             $prefix,
-            self::$_recurse,
+            self::$_recursive,
             self::$_opts,
             self::$_depth,
             implode('->', self::$_context)
@@ -270,6 +334,23 @@ class ObjectMerge
     {
         self::$_context[self::$_depth] = $key;
 
+        if (isset(self::$_cb)) {
+            $res = call_user_func(self::$_cb, self::_fullState($key, $leftValue, $rightValue));
+            $resT = gettype($res);
+            if (self::OBJECT_T === $resT) {
+                if ($res instanceof ObjectMergeResult && !$res->shouldContinue()) {
+                    $finalValue = $res->getFinalValue();
+                    if (OBJECT_MERGE_UNDEFINED !== $finalValue) {
+                        return $finalValue;
+                    }
+                    $leftValue = $res->getLeftValue();
+                    $rightValue = $res->getRightValue();
+                }
+            } else {
+                return $res;
+            }
+        }
+
         $leftUndefined = object_merge_value_undefined($leftValue, self::$_opts);
         $rightUndefined = object_merge_value_undefined($rightValue, self::$_opts);
 
@@ -310,7 +391,7 @@ class ObjectMerge
             return self::_mergeValues($key, self::_newEmptyValue($rightValue), $rightValue);
         }
 
-        if (!self::$_recurse || in_array($leftType, self::$_SIMPLE_TYPES, true)) {
+        if (!self::$_recursive || in_array($leftType, self::$_SIMPLE_TYPES, true)) {
             return $rightValue;
         }
 
@@ -322,12 +403,13 @@ class ObjectMerge
     }
 
     /**
-     * @param bool $recurse
+     * @param bool $recursive
      * @param int $opts
+     * @param callable|null $cb
      * @param array $objects
      * @return mixed|null
      */
-    private static function _doMerge($recurse, $opts, array $objects)
+    private static function _doMerge($recursive, $opts, $cb, array $objects)
     {
         if ([] === $objects) {
             return null;
@@ -336,8 +418,9 @@ class ObjectMerge
         $root = null;
 
         // set state
-        self::$_recurse = $recurse;
+        self::$_recursive = $recursive;
         self::$_opts = $opts;
+        self::$_cb = $cb;
 
         foreach ($objects as $object) {
             if (null === $object) {
@@ -349,14 +432,15 @@ class ObjectMerge
                 continue;
             }
 
-            $root = self::_mergeObjectValues($root, !$recurse ? clone $object : $object);
+            $root = self::_mergeObjectValues($root, !$recursive ? clone $object : $object);
         }
 
         // reset state
         self::$_depth = -1;
         self::$_context = [];
-        self::$_recurse = false;
+        self::$_recursive = false;
         self::$_opts = 0;
+        self::$_cb = null;
 
         return $root;
     }
