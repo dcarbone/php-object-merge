@@ -66,7 +66,7 @@ You may provide any php-callable notation you wish, including:
 ```php
 object_merge_callback(0, 'function_name', ...$objects);
 object_merge_callback(0, $closure, ...$objects);
-object_merge_callback(0, ['FQCN', 'function_name'], ...$objects);
+object_merge_callback(0, ['FQN', 'function_name'], ...$objects);
 object_merge_callback(0, [$instance, 'function_name'], ...$objects);
 ```
 
