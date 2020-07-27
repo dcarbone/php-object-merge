@@ -18,18 +18,18 @@
 
 use DCarbone\ObjectMerge;
 
-if (!function_exists('object_merge_value_undefined')) {
+if (!function_exists('is_object_merge_undefined_value')) {
     /**
      * @param mixed $value
      * @param int $opts
      * @return bool
      */
-    function object_merge_value_undefined($value, $opts = 0)
+    function is_object_merge_undefined_value($value, $opts = 0)
     {
         if (null === $value && 0 !== ($opts & OBJECT_MERGE_OPT_NULL_AS_UNDEFINED)) {
             return true;
         }
-        return $value === OBJECT_MERGE_UNDEFINED;
+        return $value === OBJECT_MERGE_UNDEFINED_VALUE;
     }
 }
 

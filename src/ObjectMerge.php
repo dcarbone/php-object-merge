@@ -274,8 +274,8 @@ class ObjectMerge
                 $rightDefined = array_key_exists($i, $rightValue);
                 $out[$i] = self::_mergeValues(
                     $i,
-                    $leftDefined ? $leftValue[$i] : OBJECT_MERGE_UNDEFINED,
-                    $rightDefined ? $rightValue[$i] : OBJECT_MERGE_UNDEFINED
+                    $leftDefined ? $leftValue[$i] : OBJECT_MERGE_UNDEFINED_VALUE,
+                    $rightDefined ? $rightValue[$i] : OBJECT_MERGE_UNDEFINED_VALUE
                 );
             }
         } else {
@@ -314,8 +314,8 @@ class ObjectMerge
         foreach (array_keys(get_object_vars($leftValue) + get_object_vars($rightValue)) as $key) {
             $out->{$key} = self::_mergeValues(
                 $key,
-                property_exists($leftValue, $key) ? $leftValue->{$key} : OBJECT_MERGE_UNDEFINED,
-                property_exists($rightValue, $key) ? $rightValue->{$key} : OBJECT_MERGE_UNDEFINED
+                property_exists($leftValue, $key) ? $leftValue->{$key} : OBJECT_MERGE_UNDEFINED_VALUE,
+                property_exists($rightValue, $key) ? $rightValue->{$key} : OBJECT_MERGE_UNDEFINED_VALUE
             );
         }
 
@@ -340,7 +340,7 @@ class ObjectMerge
             if (self::OBJECT_T === $resT) {
                 if ($res instanceof ObjectMergeResult && !$res->shouldContinue()) {
                     $finalValue = $res->getFinalValue();
-                    if (OBJECT_MERGE_UNDEFINED !== $finalValue) {
+                    if (OBJECT_MERGE_UNDEFINED_VALUE !== $finalValue) {
                         return $finalValue;
                     }
                     $leftValue = $res->getLeftValue();
@@ -351,8 +351,8 @@ class ObjectMerge
             }
         }
 
-        $leftUndefined = object_merge_value_undefined($leftValue, self::$_opts);
-        $rightUndefined = object_merge_value_undefined($rightValue, self::$_opts);
+        $leftUndefined = is_object_merge_undefined_value($leftValue, self::$_opts);
+        $rightUndefined = is_object_merge_undefined_value($rightValue, self::$_opts);
 
         if ($leftUndefined && $rightUndefined) {
             if (self::_optSet(OBJECT_MERGE_OPT_NULL_AS_UNDEFINED)) {

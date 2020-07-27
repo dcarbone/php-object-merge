@@ -80,7 +80,7 @@ class ObjectMergeResult implements ArrayAccess
      */
     public function getFinalValue()
     {
-        return (isset($this->finalValue) || null === $this->finalValue) ? $this->finalValue : OBJECT_MERGE_UNDEFINED;
+        return (isset($this->finalValue) || null === $this->finalValue) ? $this->finalValue : OBJECT_MERGE_UNDEFINED_VALUE;
     }
 
     /**
@@ -88,7 +88,7 @@ class ObjectMergeResult implements ArrayAccess
      */
     public function getLeftValue()
     {
-        return (isset($this->leftValue) || null === $this->leftValue) ? $this->leftValue : OBJECT_MERGE_UNDEFINED;
+        return (isset($this->leftValue) || null === $this->leftValue) ? $this->leftValue : OBJECT_MERGE_UNDEFINED_VALUE;
     }
 
     /**
@@ -96,7 +96,7 @@ class ObjectMergeResult implements ArrayAccess
      */
     public function getRightValue()
     {
-        return (isset($this->rightValue) || null === $this->rightValue) ? $this->rightValue : OBJECT_MERGE_UNDEFINED;
+        return (isset($this->rightValue) || null === $this->rightValue) ? $this->rightValue : OBJECT_MERGE_UNDEFINED_VALUE;
     }
 
     /**
